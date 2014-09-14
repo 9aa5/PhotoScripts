@@ -38,9 +38,36 @@ class DupReport():
    def compute_hash(self, file_path):
       return hashlib.sha256(open(file_path, 'rb').read()).digest()[:16]
 
-   def detect_dup(self):
+   def same_size_files(self):
       filelist = filelist_generator('.', self.filter, self.file_pattern)
+      file_size_list = {}
+      size_duplicate = []
       for filepath in filelist:
+         size_key = str(os.path.getsize(filepath))
+         if size_key in file_size_list:
+            if type(file_size_list[size_key]) is str:
+               # The value is a single file, so this is a first time
+               # collision.  Convert the single file into a list of files.
+               files_with_same_size = []
+               files_with_same_size.append(file_size_list[size_key])
+               files_with_same_size.append(filepath)
+               file_size_list[size_key] = files_with_same_size
+            else:
+               # The value is already a list, we just need to append
+               # more size-duplicated file names.
+               file_size_list[size_key].append(filepath)
+         else:
+            file_size_list[size_key] = filepath
+
+      for file_size in file_size_list:
+         if not (type(file_size_list[file_size]) is str):
+            files_with_same_size = file_size_list[file_size]
+            for file_path in files_with_same_size:
+               size_duplicate.append(file_path)
+      return size_duplicate
+
+   def detect_dup_with_file_list(self, file_list):
+      for filepath in file_list:
          hash_val = str(self.compute_hash(filepath))
          if hash_val in self.file_hash_list:
             if type(self.file_hash_list[hash_val]) is str:
@@ -58,6 +85,14 @@ class DupReport():
                self.file_hash_list[hash_val].append(filepath)
          else:
             self.file_hash_list[hash_val] = filepath
+
+   def detect_dup(self):
+      file_list = self.same_size_files()
+      self.detect_dup_with_file_list(file_list)
+
+   def detect_dup_brute_force(self):
+      filelist = filelist_generator('.', self.filter, self.file_pattern)
+      self.detect_dup_with_file_list(filelist)
 
    def print_dup(self):
       if not self.dup_list:
@@ -77,6 +112,5 @@ def main():
    dup_reporter = DupReport('.', filter, file_pattern)
    dup_reporter.detect_dup()
    dup_reporter.print_dup()
-   pass
 
 main()
