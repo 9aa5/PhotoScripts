@@ -39,7 +39,7 @@ class DupReport():
       return hashlib.sha256(open(file_path, 'rb').read()).digest()[:16]
 
    def same_size_files(self):
-      filelist = filelist_generator('.', self.filter, self.file_pattern)
+      filelist = filelist_generator(self.startDir, self.filter, self.file_pattern)
       file_size_list = {}
       size_duplicate = []
       for filepath in filelist:
@@ -91,7 +91,7 @@ class DupReport():
       self.detect_dup_with_file_list(file_list)
 
    def detect_dup_brute_force(self):
-      filelist = filelist_generator('.', self.filter, self.file_pattern)
+      filelist = filelist_generator(self.startDir, self.filter, self.file_pattern)
       self.detect_dup_with_file_list(filelist)
 
    def print_dup(self):
@@ -109,7 +109,11 @@ def main():
    filter = ['jpeg', 'jpg']
    # file_pattern = ['dsc', 'img', 'picture']
    file_pattern = []
-   dup_reporter = DupReport('.', filter, file_pattern)
+   if len(sys.argv) == 1:
+      startDir = '.'
+   else:
+      startDir = sys.argv[1]
+   dup_reporter = DupReport(startDir, filter, file_pattern)
    dup_reporter.detect_dup()
    dup_reporter.print_dup()
 
